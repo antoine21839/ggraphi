@@ -22,7 +22,7 @@ static void supprimer_extension(char *nom_fichier){
 }
 
 static void lire_inclusions(Tab_dyn *inclusions, FILE *f, char *path_fichier){
-    char nom_fichier[500], ligne_dot[2000], ligne_inclusion[1000], nom_fichier_inclus[1000], com_prepro[500];
+    char nom_fichier[500], ligne_dot[2000], ligne_inclusion[1000], nom_fichier_inclus[1000];
 
     assert(inclusions != NULL);
     assert(f != NULL);
@@ -30,9 +30,7 @@ static void lire_inclusions(Tab_dyn *inclusions, FILE *f, char *path_fichier){
 
 
     while(fscanf(f, "%[^\n]\n", ligne_inclusion) == 1){
-        sscanf(ligne_inclusion, "%s %*[\"<]%[^.]", com_prepro, nom_fichier_inclus);
-        if(strcmp(com_prepro, "#include"))
-            continue;
+        sscanf(ligne_inclusion, "#include %*[\"<]%[^.]", nom_fichier_inclus);
         strcpy(nom_fichier, basename(path_fichier));
         supprimer_extension(nom_fichier);
         if(!strcmp(nom_fichier, nom_fichier_inclus))
@@ -45,18 +43,17 @@ static void lire_inclusions(Tab_dyn *inclusions, FILE *f, char *path_fichier){
 }
 
 void charger_inclusions_fichiers(Tab_dyn *inclusions, FILE *liste_fichiers){
-    char path_fichier[1000];
-    FILE *f;
+    char path_fichier[300], commande[500];
+    FILE *fp;
 
     assert(inclusions != NULL);
     assert(liste_fichiers != NULL);
 
     while(fscanf(liste_fichiers, "%s", path_fichier) == 1){
-        f = fopen(path_fichier, "r");
-        if(f == NULL)
-            fprintf(stderr, "Impossible d'ouvrir \"%s\". Avez vous les permissions de lecture ?\n", path_fichier);
-        lire_inclusions(inclusions, f, path_fichier);
-        fclose(f);
+        sprintf(commande, "grep \"#include\" %s", path_fichier);
+        fp = popen(commande,"r");
+        lire_inclusions(inclusions, fp, path_fichier);
+        pclose(fp);
     }
 }
 
